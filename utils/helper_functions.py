@@ -29,8 +29,9 @@ def clean_text(text: str) -> str:
     OUTPUTS:
     str Texte nettoyé (sans emoji, avec espaces normalisés).
     """
-    text = emoji.replace_emoji(text, replace="")
-    text = re.sub(r"\s+", " ", text)
+    text = emoji.replace_emoji(text, replace="") # Suppression des émojis
+    text = re.sub(r"http\S+|www\S+", "", text) # Suppression des URL
+    text = re.sub(r"\s+", " ", text) # Suppression des extra-espacements 
     text = text.strip()
     return text
 
