@@ -22,7 +22,7 @@ This utility is meant to clean up raw input—typically from user-generated cont
 - `text` (`str`): The raw input string that may contain emojis and irregular spacing.
 
 **Returns**
-- `str`: A cleaned version of the input string, without emojis and with normalized whitespace.
+- `str`: A cleaned version of the input string, without emojis, urls and with normalized whitespace.
 
 **Usage Context**
 This function is helpful during early preprocessing, especially when dealing with noisy inputs from platforms like Twitter, YouTube comments, or TikTok captions.
