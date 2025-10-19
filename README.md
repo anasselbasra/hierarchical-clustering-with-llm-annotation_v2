@@ -1,6 +1,6 @@
 # Hierarchical Clustering with LLM Annotation – Overview
 
-This repo builds a **scalable topic discovery pipeline** — turning thousands of raw texts into structured, interpretable themes.  
+This repo (v2, as it improves upon the earlier version) builds a **scalable topic discovery pipeline** — turning thousands of raw texts into structured, interpretable themes.  
 Developed on 140K LinkedIn posts about AI (June 2025), it generalises to any domain (Cybersecurity, Politics...).
 
 ---
