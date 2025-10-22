@@ -18,8 +18,10 @@ Developed on 140K LinkedIn posts about AI (June 2025), it generalises to any dom
 | 7- LLM Annotation | Auto-label each theme in 1–3 words | OpenAI API (prompt templates per domain) |
 | 8- Visualization | Explore clusters interactively | Plotly, heatmaps, dendrograms |
 
+## Annotated Cluster Map (Reduced View)
+
 <p align="center">
-  <img src="assets/HDBSCAN%20performance.png" alt="Ground-truth vs HDBSCAN clusters" width="95%" />
+  <img src="assets/Topic%20Modeling%20Annotated%20Clusters.png" alt="Topic labels positioned on UMAP + HDBSCAN clusters" width="100%" />
 </p>
 
 ---
@@ -38,6 +40,10 @@ Developed on 140K LinkedIn posts about AI (June 2025), it generalises to any dom
   <img src="assets/Sensibility%20Analysis.png" alt="HDBSCAN sensitivity analysis across min_samples" width="95%" />
 </p>
 
+<p align="center">
+  <img src="assets/HDBSCAN%20performance.png" alt="Ground-truth vs HDBSCAN clusters" width="95%" />
+</p>
+
 ---
 
 ## Quick Start
@@ -51,10 +57,4 @@ pip install -r requirements.txt
 2_meta_cluster_&_annotation_with_llm.ipynb
 ```
 
----
 
-## Annotated Cluster Map (Reduced View)
-
-<p align="center">
-  <img src="assets/Topic%20Modeling%20Annotated%20Clusters.png" alt="Topic labels positioned on UMAP + HDBSCAN clusters" width="100%" />
-</p>
