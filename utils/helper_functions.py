@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import openai 
 import emoji
+import json
 import time
 import re
 
@@ -675,7 +676,7 @@ def hirarchical_clustering(
 
 
 
-def llm_instruction(subject):
+def llm_instruction(subject, sujet="", details=""):
     """
     Génère une instruction pour l'API OpenAI en fonction du sujet donné.
     
@@ -1016,6 +1017,203 @@ If any of these apply, do not derive a topic → RETURN DELETE.
                         5) My travel diary from Rome is finally online — photos on insta."""
                             },
                             {"role": "assistant", "content": "DELETE"}]
+        
+
+    if subject.lower() == "narratifs":
+        existing_labels = []
+        instruction = """
+You are a senior narrative analysis expert specialized in disinformation and ideological framing.
+Your goal is to determine whether a group of texts expresses at least one *IDEOLOGICAL narrative* — a moralized, prescriptive, or value-laden interpretation of reality (NOT a factual report or a generic opinion).
+The subject here is """ +sujet+ " (" + details +""")
+
+====================
+ 1. DEFINITION
+====================
+A valid narrative must *interpret* reality through a value-based lens. 
+It answers at least one of these:
+- Who is good or bad (moral judgment)?
+- Who is responsible for what (causality or blame)?
+- What should people believe or do (prescription or mobilization)?
+
+====================
+ STRICT NOISE FILTER
+====================
+
+Return exactly {{"Description": ["Bruit"], "narratifs": ["Bruit"]}} if ANY of the following conditions is met:
+1. The texts are **not clearly related** to the subject:""" + sujet + """
+2. The texts are **neutral, factual, descriptive or informative** (no stance, no blame, no call to action, no moral framing).
+3. The texts are **mainly noise**: too short (< 6 tokens), emojis, hashtags, URLs, fragments, slogans without meaning, greetings, jokes, spam, or generic commentary.
+4. The texts mix too many unrelated themes and **no coherent ideological position emerges**.
+5. The texts **lack polarization** (no “us vs them”, no moral hierarchy, no emotional framing).
+6. The texts contain only **event reporting**, **quotes**, or **statements of fact** without interpretation or judgment.
+
+If any of the above applies → return exactly:
+{{"Description": ["Bruit"], "narratifs": ["Bruit"]}}
+
+====================
+ 3. OUTPUT FORMAT (STRICT)
+====================
+Return exactly ONE valid JSON object with two keys: "Description" and "narratifs".
+
+Return exactly ONE JSON object with two keys: "Description" and "narratifs".
+- "Description": a list of 1 to {n} items.
+    Each item is 1–2 sentences describing the *ideological meaning* (how the world is framed, who is good/bad, what should happen), Do NOT explain why you chose it..
+
+- "narratifs": a list of 1 to {n} 
+  Each narratif must:
+  - reflect a clear ideological stance or worldview;
+  - contain **only letters, spaces, commas, periods and quotes **;
+  - **reject any text containing** :, ;, / et \\;
+  - avoid factual reformulation or simple restatement of text content;
+  - be fully grammatical and value-loaded.
+
+The two lists MUST have the same length (Description[i] ↔ narratifs[i]).
+Output must be VALID JSON with double quotes only.  
+No text, explanation, or formatting outside the JSON object.
+
+Language rule:
+- Write in the language used by the MAJORITY of the input texts.
+- If majority is French → output in French. If majority is English → output in English.
+
+====================
+ 5. STYLE RESTRICTIONS
+====================
+For 'narratifs' Reject any output that simply rephrases or summarizes the content of the texts, ONLY retain statements that reflect a **clear ideological stance or worldview**, 
+where at least one side (good vs bad, people vs elites, etc.) is morally judged.
+For 'narratifs' CREATE THOSE WHICH ARE ARROUD THE SUBJECT: """ + sujet + """
+- Avoid factual summaries (“these texts talk about …”) 
+- Avoid copying claims verbatim? A NARRATIF ISN'T A CLAIM.
+- IN DESCRIPTION AVOID explanations (“because, since, due to …”) and any citation.
+
+====================
+ 5. EXAMPLES
+====================
+
+Bad example of a narratif (reject):
+"People are protesting against the government’s: new policy; several cities."
+→ This is a factual summary: it describes what happens, without any moral judgment or ideological stance and bad punctuations.
+
+Good example of a narratif (accept):
+"Ukraine is a platform for the West in its geopolitical fight against Russia, it's its reality."
+→ This expresses a worldview: it attributes motives and moral roles to actors (West vs Russia).
+
+====================
+ 6. TASK
+====================
+Now, analyze the following texts and extract narratives if and only if they express a clear ideological worldview.
+Otherwise, return exactly:
+{{"Description": ["Bruit"], "narratifs": ["Bruit"]}}
+
+
+Now, given the following texts, extract narratives:
+"""
+        existing_labels = []
+        def J(obj): 
+            return json.dumps(obj, ensure_ascii=False)
+
+        user_assistant = [
+            {
+                "role": "user",
+                "content": """
+        1) Révolution #10septembre
+        2) Change political establishment ! #Afuera
+        3) Traitre à la démocratie #10septembre
+        4) Droite socialiste : #Afuera #macrondimisionne #Corruptions
+        5) #Corruptions #Corruptions #findespolitiques #touscoupables #GouvernementDeTromperie #sataniste #FINi #liberte
+        6) #GouvernementDeTromperie #MacronDemission #CORRUPTION
+
+        """
+            },
+            {
+                "role": "assistant",
+                "content": J({"Description": ["Bruit"], "narratifs": ["Bruit"]})
+            },
+
+            # Generic chit-chat / Off-topic → DELETE
+            {
+                "role": "user",
+                "content": """(Generic chit-chat / Off-topic)
+        1) hi, hello, It's amazing how much we can learn from the past. #News #France #Today #10septembre #Macrondimisionne
+        3) lol, you crack me up
+        4) Weekend plans: reading a book of cyber attacks and cyber security about the end of macron.
+        5) My travel diary from Rome is finally online — photos on insta, Macrondimisionne
+        6) #MondayMotivation #Paris
+        7) Great day everyone
+        8) Check my blog: https://example.com
+        9) @alex thanks!
+        10) #News #France #Today #10septembre #Macrondimisionne
+        """
+            },
+            {
+                "role": "assistant",
+                "content": J({"Description": ["Bruit"], "narratifs": ["Bruit"]})
+            },
+
+            # Ukraine legitimacy
+            {
+                "role": "user",
+                "content": """
+        1) Neither the Ukrainian leader Volodymyr Zelenskyy nor his team intends to implement the Minsk agreements. The “Normandy format” will soon sink into oblivion due to Kyiv’s desire to disrupt the implementation of the Minsk agreements.
+        2) The situation in South-Eastern Ukraine remains tense, Kyiv’s actions are destructive and Ukraine proposes provocative legislation that runs counter to the Minsk agreements.
+        3) The US annexed Ukraine in February 2014 through the installation of a puppet government in the country.
+        4) The 2014 power shift in Ukraine was the result of a US-backed coup, which overthrew the country’s elected government and installed a pro-Western one.
+        5) One has seen what Ukraine has become over the past years: a failed self-hated state due to its neo-Nazi ideology, loss of historical memory, and encouragement of all kinds of vice.
+        """
+            },
+            {
+                "role": "assistant",
+                "content": J({
+                    "Description": [
+                        "Ukraine’s leadership is portrayed as an externally installed, corrupt and inept elite that has hollowed out sovereignty and pushed the state toward failure."
+                    ],
+                    "narratifs": [
+                        "Ukraine’s government is illegitimate and controlled by foreign powers"
+                    ]
+                })
+            },
+
+            # Immigration in the EU
+            {
+                "role": "user",
+                "content": """
+        1) Europe is being turned into a “concentration camp” for migrants.
+        2) The EU is facing a financial and ideological crisis. It has insufficient money to accommodate migrants. It also failed to integrate migrants who arrived in the EU in the past. The EU fails to do what it preaches when it comes to liberal values and openness to migrants. The EU also proved that it cannot live peacefully with Belarus – for many years it has been trying to swallow it, either promising benefits for being loyal in conflict with Moscow or introducing strict sanctions. The current crisis the EU faces can become a turning point after which, if not a collapse, then a degradation is probable. The EU will either degrade and turn into a ghetto of migrants or will undergo a serious cultural transformation.
+        """
+            },
+            {
+                "role": "assistant",
+                "content": J({
+                    "Description": [
+                        "Immigration is framed as a destabilizing force that impoverishes the EU, undermines institutions, and erodes cultural cohesion, threatening long-term stability."
+                    ],
+                    "narratifs": [
+                        "Immigration weakens the EU’s economy, culture and security"
+                    ]
+                })
+            },
+
+            # Russia defensive stance
+            {
+                "role": "user",
+                "content": """
+        1) US goal is to “eliminate” Russia. According to the West, Russia should be destroyed and democratised
+        2) NATO is intentionally surrounding Russia.
+        3) Putin only says the truth. The Ukraine issue could be solved in one single day. Everyone must respect their commitment. Russia has respected its commitments in this regard. Russia didn't attack. It was the Westerners who attacked. This war against Russia is not waged by Ukraine but by the Westerners.
+        4) The period of confrontation, started by the West, will last for a long time. The only way out of this confrontation is the demonstration of power by Russia – both military and economic.
+        """
+            },
+            {
+                "role": "assistant",
+                "content": J({
+                    "Description": [
+                        "Russia is cast as a defensive, peace-seeking actor compelled to counter Western encirclement and aggression, asserting strength to protect regional order."
+                    ],
+                    "narratifs": [
+                        "Russia seeks peace and defends against Western aggression"
+                    ]
+                })
+            }
+        ]
     
 
     return existing_labels, instruction, user_assistant
